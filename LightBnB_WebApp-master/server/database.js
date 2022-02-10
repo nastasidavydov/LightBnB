@@ -1,7 +1,12 @@
-const properties = require('./json/properties.json');
-const users = require('./json/users.json');
+// const properties = require('./json/properties.json');
+// const users = require('./json/users.json');
 const { Pool } = require('pg');
-const pool = new Pool();
+const pool = new Pool({
+  user: 'vagrant',
+  password: '123',
+  host: 'localhost',
+  database: 'lightbnb'
+});
 /// Users
 
 /**
@@ -10,16 +15,18 @@ const pool = new Pool();
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithEmail = function(email) {
-  let user;
-  for (const userId in users) {
-    user = users[userId];
-    if (user.email.toLowerCase() === email.toLowerCase()) {
-      break;
-    } else {
-      user = null;
-    }
-  }
-  return Promise.resolve(user);
+  const queryStr = `
+  SELECT * FROM users
+  WHERE email = $1;
+`;
+
+   return pool.query(queryStr, [email])
+  .then(res => {
+    if (res.rows) return res.rows[0];
+    return null;
+  })
+  .catch(err => console.log(err))
+
 }
 exports.getUserWithEmail = getUserWithEmail;
 
@@ -68,7 +75,7 @@ exports.getAllReservations = getAllReservations;
  * @return {Promise<[{}]>}  A promise to the properties.
  */
  const getAllProperties = (options, limit = 10) => {
-  pool
+  return pool
     .query(`SELECT * FROM properties LIMIT $1`, [limit])
     .then((result) => result.rows)
     .catch((err) => {
